@@ -1,19 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:orientation="vertical"
+    android:padding="20dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="GAT108 — Monitor de Vibração (MVP)"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Status: Parado"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvSampleCount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Amostras adquiridas: 0"
+        android:textSize="16sp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvResidualBefore"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Resíduo Bruto (Antes): 0.0000 m/s²"
+        android:textSize="15sp"
+        android:layout_marginBottom="6dp" />
+
+    <TextView
+        android:id="@+id/tvResidualAfter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Resíduo Reconciliado (Depois): 0.0000 m/s²"
+        android:textSize="15sp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvGrossErrorStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Detector de Erro Grosseiro: NORMAL"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnStartService"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="1. Iniciar Aquisição Contínua (50 ms)"
+        android:layout_marginBottom="10dp" />
+
+    <Button
+        android:id="@+id/btnInjectFault"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="2. Injetar Falha Determinística (Salto +6 m/s²)"
+        android:layout_marginBottom="10dp" />
+
+    <Button
+        android:id="@+id/btnStopService"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="3. Parar Aquisição" />
+
+</LinearLayout>
