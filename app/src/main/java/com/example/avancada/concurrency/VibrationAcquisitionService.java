@@ -48,7 +48,7 @@ public class VibrationAcquisitionService extends Service implements SensorEventL
     private volatile float lastAx = 0f;
     private volatile float lastAy = 0f;
     private volatile float lastAz = 9.80665f;
-    private volatile double sensorStdDev = 0.05;
+    private volatile double sensorStdDev = 0.15;
 
     private final CircularVibrationBuffer sharedBuffer = new CircularVibrationBuffer(600); // 30s a 20Hz
     private final GrossErrorDetector detector = new GrossErrorDetector(3.0);
@@ -92,7 +92,7 @@ public class VibrationAcquisitionService extends Service implements SensorEventL
             if (accelerometer != null) {
                 double res = accelerometer.getResolution();
                 if (res > 0) {
-                    sensorStdDev = Math.max(res, 0.02);
+                    sensorStdDev = Math.max(res, 0.15);
                 }
                 sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
             }
@@ -154,7 +154,7 @@ public class VibrationAcquisitionService extends Service implements SensorEventL
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         switch (accuracy) {
             case SensorManager.SENSOR_STATUS_ACCURACY_HIGH:
-                sensorStdDev = 0.03;
+                sensorStdDev = 0.15;
                 break;
             case SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM:
                 sensorStdDev = 0.08;

@@ -3,11 +3,15 @@ package com.example.avancada;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -24,17 +28,21 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvStatus, tvSampleCount, tvResidualBefore, tvResidualAfter, tvGrossErrorStatus;
+    private ProgressBar pbResidualBefore, pbResidualAfter;
+    private LinearLayout cardAlert;
+    private View viewStatusDot;
+
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
     private final GrossErrorDetector detector = new GrossErrorDetector(3.0);
     private final VibrationReconciler reconciler = new VibrationReconciler(new NoiseCharacterizer(), detector);
     private final FaultInjector faultInjector = new FaultInjector(42L);
-    private boolean injectFaultOnce = false;
+    private int faultFramesRemaining = 0; // Mantém o alerta visual visível por ~1 segundo na apresentação
 
     private final Runnable uiUpdater = new Runnable() {
         @Override
         public void run() {
             updateDashboard();
-            uiHandler.postDelayed(this, 250L); // Atualiza interface a 4 Hz lendo cópia defensiva
+            uiHandler.postDelayed(this, 200L); // Atualização fluida a 5 Hz
         }
     };
 
@@ -48,6 +56,10 @@ public class MainActivity extends AppCompatActivity {
         tvResidualBefore = findViewById(R.id.tvResidualBefore);
         tvResidualAfter = findViewById(R.id.tvResidualAfter);
         tvGrossErrorStatus = findViewById(R.id.tvGrossErrorStatus);
+        pbResidualBefore = findViewById(R.id.pbResidualBefore);
+        pbResidualAfter = findViewById(R.id.pbResidualAfter);
+        cardAlert = findViewById(R.id.cardAlert);
+        viewStatusDot = findViewById(R.id.viewStatusDot);
 
         Button btnStart = findViewById(R.id.btnStartService);
         Button btnInject = findViewById(R.id.btnInjectFault);
@@ -62,14 +74,18 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 startService(intent);
             }
-            tvStatus.setText("Status: Adquirindo em 1º Plano (50 ms)");
+            tvStatus.setText("AQUISIÇÃO ATIVA EM 1º PLANO (20 Hz)");
+            tvStatus.setTextColor(Color.parseColor("#38BDF8"));
+            viewStatusDot.setBackgroundColor(Color.parseColor("#38BDF8"));
         });
 
-        btnInject.setOnClickListener(v -> injectFaultOnce = true);
+        btnInject.setOnClickListener(v -> faultFramesRemaining = 5); // Exibe o pulso de falha por 1s (5 x 200ms)
 
         btnStop.setOnClickListener(v -> {
             stopService(new Intent(this, VibrationAcquisitionService.class));
-            tvStatus.setText("Status: Parado");
+            tvStatus.setText("SERVIÇO PARADO");
+            tvStatus.setTextColor(Color.parseColor("#94A3B8"));
+            viewStatusDot.setBackgroundColor(Color.parseColor("#64748B"));
         });
 
         uiHandler.post(uiUpdater);
@@ -77,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateDashboard() {
         long total = VibrationAcquisitionService.getTotalAcquiredCount();
-        tvSampleCount.setText("Amostras adquiridas: " + total);
+        tvSampleCount.setText(String.format(Locale.US, "%,d", total));
 
         List<VibrationSample> latestList = VibrationAcquisitionService.getLatestSamplesSnapshot(1);
         if (latestList.isEmpty()) {
@@ -85,10 +101,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         VibrationSample sample = latestList.get(0);
-        if (injectFaultOnce) {
+        if (faultFramesRemaining > 0) {
             List<VibrationSample> degraded = faultInjector.injectJumpFault(latestList, 6.0, 1.0);
             sample = degraded.get(0);
-            injectFaultOnce = false;
+            faultFramesRemaining--;
         }
 
         double resBefore = detector.computeRawResidual(sample);
@@ -96,14 +112,25 @@ public class MainActivity extends AppCompatActivity {
         VibrationSample reconciled = reconciler.reconcile(sample, true);
 
         tvResidualBefore.setText(String.format(Locale.US, "Resíduo Bruto (Antes): %.4f m/s²", resBefore));
+        // Escala visual: 0.50 m/s² preenche 100% da barra de ruído
+        int progressBefore = (int) Math.min(100, Math.round((resBefore / 0.50) * 100));
+        pbResidualBefore.setProgress(progressBefore);
 
         if (grossError || reconciled == null) {
-            tvResidualAfter.setText("Resíduo Reconciliado (Depois): AMOSTRA REJEITADA");
-            tvGrossErrorStatus.setText("Detector de Erro Grosseiro: ALERTA DE FALHA DETECTADA!");
+            tvResidualAfter.setText("Resíduo Reconciliado: AMOSTRA REJEITADA");
+            tvResidualAfter.setTextColor(Color.parseColor("#FCA5A5"));
+            pbResidualAfter.setProgress(0);
+
+            cardAlert.setBackgroundColor(Color.parseColor("#7F1D1D")); // Vermelho alerta
+            tvGrossErrorStatus.setText("ALERTA: ERRO GROSSEIRO DETECTADO!");
         } else {
             double resAfter = detector.computeRawResidual(reconciled);
             tvResidualAfter.setText(String.format(Locale.US, "Resíduo Reconciliado (Depois): %.6f m/s²", resAfter));
-            tvGrossErrorStatus.setText("Detector de Erro Grosseiro: NORMAL (1g estável)");
+            tvResidualAfter.setTextColor(Color.parseColor("#34D399"));
+            pbResidualAfter.setProgress((int) Math.min(100, Math.round((resAfter / 0.50) * 100)));
+
+            cardAlert.setBackgroundColor(Color.parseColor("#064E3B")); // Verde nominal
+            tvGrossErrorStatus.setText("OPERAÇÃO NOMINAL (1g ESTÁVEL)");
         }
     }
 
